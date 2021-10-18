@@ -6,10 +6,6 @@ from django.http import HttpResponse
 from blog.models import Photos, Posts, Followers, Comments, User
 
 
-def public(request):
-    return HttpResponse("You don't need to be authenticated to see this")
-
-
 @api_view(['POST'])
 def createPost(request):
     user = checkToken(request.COOKIES.get('token'))
@@ -23,6 +19,7 @@ def createPost(request):
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['DELETE'])
 def deletePost(request):
     user = checkToken(request.COOKIES.get('token'))
@@ -34,6 +31,7 @@ def deletePost(request):
             return Response({"status": "error", "massage": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['get'])
 def addFollower(request):
@@ -47,6 +45,7 @@ def addFollower(request):
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['DELETE'])
 def deleteFollower(request):
     user = checkToken(request.COOKIES.get('token'))
@@ -59,6 +58,7 @@ def deleteFollower(request):
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['POST'])
 def addComment(request):
     user = checkToken(request.COOKIES.get('token'))
@@ -70,6 +70,7 @@ def addComment(request):
             return Response({"status": "error", "massage": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET'])
 def getComments(request):
@@ -90,6 +91,7 @@ def getComments(request):
             return Response({"status": "error", "massage": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['GET'])
 def getPosts(request):
@@ -118,13 +120,14 @@ def view(request):
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['GET'])
 def getUser(request):
     user = checkToken(request.COOKIES.get('token'))
     if user:
         try:
-            user = User.objects.get(user_name = request.GET['user_id'])
-            {
+            user = User.objects.get(id = request.GET['user_id'])
+            u = {
                 "id": user.id,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
@@ -132,27 +135,66 @@ def getUser(request):
                 "email": user.email,
                 "image": user.image
             }
-            return Response({"status": 'success', "massage": ""})
+            return Response({"status": 'success', "user": u})
         except:
-            return Response({"status": "error", "massage": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
+            u = {
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "user_name": user.user_name,
+                "email": user.email,
+                "image": user.image
+            }
+            return Response({"status": 'success', "user": u})
     else:
         return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
 @api_view(['GET'])
-def getUser(request):
-    user_name = request.data.get('user_name', '')
-    try:
-        user = User.objects.get(user_name = user_name)
-        u = {
-            "id": user.id,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "user_name": user.user_name,
-            "email": user.email,
-            "image": user.image
-        }
-        return Response({"status": "success", "user": u})
-    except User.DoesNotExist:
-        return Response({"status": "error", "massage": "this user doesn't exsist"})
+def getFolloers(request):
+    user = checkToken(request.COOKIES.get('token'))
+    if user:
+        try:
+            followers = Followers.objects.filter(user_id = request.GET['user_id']).select_related()
+            f = []
+            for follower in followers:
+                f.append({
+                    "id": follower.id,
+                    "first_name": follower.follower.first_name,
+                    "last_name": follower.follower.last_name,
+                    "user_name": follower.follower.user_name,
+                    "email": follower.follower.email,
+                    "image": follower.follower.image
+                })
+            return Response({"status": "success", "followers": f})
+        except User.DoesNotExist:
+            return Response({"status": "error", "massage": ""})
+    else:
+        return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET'])
+def getFollowing(request):
+    user = checkToken(request.COOKIES.get('token'))
+    if user:
+        try:
+            followers = Followers.objects.filter(follower_id = request.GET['user_id']).select_related()
+            f = []
+            for follower in followers:
+                f.append({
+                    "id": follower.id,
+                    "first_name": follower.user.first_name,
+                    "last_name": follower.user.last_name,
+                    "user_name": follower.user.user_name,
+                    "email": follower.user.email,
+                    "image": follower.user.image
+                })
+            return Response({"status": "success", "followers": f})
+        except User.DoesNotExist:
+            return Response({"status": "error", "massage": ""})
+    else:
+        return Response({"status": 'error', "massage": 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 def checkToken(token):
     try:
