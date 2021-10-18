@@ -13,4 +13,5 @@ urlpatterns = [
     url(r'^comments', views.getComments),
     url(r'^posts', views.getPosts),
     url(r'^view', views.view),
+    url(r'^view', views.view),
 ]
